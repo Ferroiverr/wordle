@@ -125,52 +125,25 @@ class _WordleGameState extends State<WordleGame> {
     }
   }
 
-  // Обработка физической клавиатуры
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (gameOver || isLoading) return KeyEventResult.ignored;
 
     final key = event.logicalKey;
 
-    // Backspace
     if (key == LogicalKeyboardKey.backspace) {
       _onKeyTap('⌫');
       return KeyEventResult.handled;
     }
 
-    // Enter
     if (key == LogicalKeyboardKey.enter) {
       _onKeyTap('Ввод');
       return KeyEventResult.handled;
     }
 
-    // Русские и английские буквы
-    String? letter;
-
-    // Русская раскладка
-    const russianKeys = {
-      'KeyQ': 'й', 'KeyW': 'ц', 'KeyE': 'у', 'KeyR': 'к', 'KeyT': 'е',
-      'KeyY': 'н', 'KeyU': 'г', 'KeyI': 'ш', 'KeyO': 'щ', 'KeyP': 'з',
-      'BracketLeft': 'х', 'BracketRight': 'ъ',
-      'KeyA': 'ф', 'KeyS': 'ы', 'KeyD': 'в', 'KeyF': 'а', 'KeyG': 'п',
-      'KeyH': 'р', 'KeyJ': 'о', 'KeyK': 'л', 'KeyL': 'д', 'Semicolon': 'ж',
-      'Quote': 'э',
-      'KeyZ': 'я', 'KeyX': 'ч', 'KeyC': 'с', 'KeyV': 'м', 'KeyB': 'и',
-      'KeyN': 'т', 'KeyM': 'ь', 'Comma': 'б', 'Period': 'ю',
-    };
-
-    if (russianKeys.containsKey(key.keyLabel) || russianKeys.containsKey(key.debugName)) {
-      letter = russianKeys[key.debugName] ?? russianKeys[key.keyLabel];
-    }
-
-    // Если нажали русскую букву напрямую (когда раскладка русская)
     final character = event.character?.toLowerCase();
     if (character != null && RegExp(r'^[а-яё]$').hasMatch(character)) {
-      letter = character;
-    }
-
-    if (letter != null) {
-      _onKeyTap(letter);
+      _onKeyTap(character);
       return KeyEventResult.handled;
     }
 
@@ -185,17 +158,14 @@ class _WordleGameState extends State<WordleGame> {
 
     String guess = board[currentRow].join();
 
-    // ===== ПРОВЕРКА СЛОВА =====
     if (!dictionary.contains(guess)) {
       setState(() => message = 'Такого слова нет в словаре!');
       return;
     }
-    // =========================
 
     List<Color> rowColors = List.filled(5, const Color(0xFF3A3A3C));
     List<bool> used = List.filled(5, false);
 
-    // Зелёные
     for (int i = 0; i < 5; i++) {
       if (guess[i] == secretWord[i]) {
         rowColors[i] = const Color(0xFF538D4E);
@@ -204,7 +174,6 @@ class _WordleGameState extends State<WordleGame> {
       }
     }
 
-    // Жёлтые
     for (int i = 0; i < 5; i++) {
       if (rowColors[i] == const Color(0xFF538D4E)) continue;
       for (int j = 0; j < 5; j++) {
@@ -247,19 +216,35 @@ class _WordleGameState extends State<WordleGame> {
       );
     }
 
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
+
+    // Адаптивные размеры
+    final double tileSize = isMobile
+        ? (size.width * 0.14).clamp(48.0, 62.0)
+        : 62.0;
+
+    final double keyHeight = isMobile ? 46.0 : 52.0;
+    final double keyWidth = isMobile
+        ? (size.width - 24) / 12.5
+        : 42.0;
+
+    final double specialKeyWidth = isMobile ? keyWidth * 1.7 : 70.0;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'WORDLE RU',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            letterSpacing: 4,
-            fontSize: 28,
+            letterSpacing: isMobile ? 2 : 4,
+            fontSize: isMobile ? 22 : 28,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: isMobile ? 50 : 56,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -275,18 +260,20 @@ class _WordleGameState extends State<WordleGame> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
+
+              // Игровое поле
               Expanded(
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (row) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: EdgeInsets.symmetric(vertical: isMobile ? 2.5 : 4),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(5, (col) {
-                            return _buildTile(row, col);
+                            return _buildTile(row, col, tileSize);
                           }),
                         ),
                       );
@@ -294,13 +281,15 @@ class _WordleGameState extends State<WordleGame> {
                   ),
                 ),
               ),
+
+              // Сообщение
               if (message.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Text(
                     message,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: isMobile ? 15 : 18,
                       fontWeight: FontWeight.bold,
                       color: message.contains('нет в словаре')
                           ? Colors.orange
@@ -309,8 +298,16 @@ class _WordleGameState extends State<WordleGame> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-              _buildKeyboard(),
-              const SizedBox(height: 20),
+
+              // Клавиатура
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 4,
+                  right: 4,
+                  bottom: isMobile ? 8 : 16,
+                ),
+                child: _buildKeyboard(keyWidth, keyHeight, specialKeyWidth, isMobile),
+              ),
             ],
           ),
         ),
@@ -318,15 +315,15 @@ class _WordleGameState extends State<WordleGame> {
     );
   }
 
-  Widget _buildTile(int row, int col) {
+  Widget _buildTile(int row, int col, double size) {
     final letter = board[row][col];
     final color = colors[row][col];
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
-      margin: const EdgeInsets.all(3),
-      width: 58,
-      height: 58,
+      margin: const EdgeInsets.all(2.5),
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: color == Colors.transparent ? Colors.transparent : color,
         border: Border.all(
@@ -342,8 +339,8 @@ class _WordleGameState extends State<WordleGame> {
       child: Center(
         child: Text(
           letter.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 28,
+          style: TextStyle(
+            fontSize: size * 0.48,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -352,40 +349,49 @@ class _WordleGameState extends State<WordleGame> {
     );
   }
 
-  Widget _buildKeyboard() {
+  Widget _buildKeyboard(double keyWidth, double keyHeight, double specialKeyWidth, bool isMobile) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: keyboardRows[0].split('').map((l) => _key(l)).toList(),
+          children: keyboardRows[0]
+              .split('')
+              .map((l) => _key(l, keyWidth, keyHeight, isMobile))
+              .toList(),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: isMobile ? 5 : 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: keyboardRows[1].split('').map((l) => _key(l)).toList(),
+          children: keyboardRows[1]
+              .split('')
+              .map((l) => _key(l, keyWidth, keyHeight, isMobile))
+              .toList(),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: isMobile ? 5 : 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _key('Ввод', width: 70),
-            ...keyboardRows[2].split('').map((l) => _key(l)),
-            _key('⌫', width: 70),
+            _key('Ввод', specialKeyWidth, keyHeight, isMobile),
+            ...keyboardRows[2]
+                .split('')
+                .map((l) => _key(l, keyWidth, keyHeight, isMobile)),
+            _key('⌫', specialKeyWidth, keyHeight, isMobile),
           ],
         ),
       ],
     );
   }
 
-  Widget _key(String letter, {double width = 38}) {
+  Widget _key(String letter, double width, double height, bool isMobile) {
     final color = keyColors[letter] ?? const Color(0xFF818384);
 
     return GestureDetector(
       onTap: () => _onKeyTap(letter),
       child: Container(
-        margin: const EdgeInsets.all(3),
+        margin: EdgeInsets.all(isMobile ? 2.2 : 3),
         width: width,
-        height: 52,
+        height: height,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(4),
@@ -394,7 +400,9 @@ class _WordleGameState extends State<WordleGame> {
           child: Text(
             letter.toUpperCase(),
             style: TextStyle(
-              fontSize: letter.length > 1 ? 13 : 16,
+              fontSize: letter.length > 1
+                  ? (isMobile ? 11 : 13)
+                  : (isMobile ? 14 : 16),
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
