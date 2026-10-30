@@ -218,21 +218,21 @@ class _WordleGameState extends State<WordleGame> {
 
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
-    final padding = MediaQuery.of(context).padding;
 
-    // Адаптивные размеры плиток
+    // ===== МОБИЛЬНЫЕ РАЗМЕРЫ =====
+    // Квадратики делаем заметно меньше
     final double tileSize = isMobile
-        ? ((size.width - 28) / 5.6).clamp(46.0, 58.0)
+        ? (size.width * 0.118).clamp(42.0, 52.0)
         : 62.0;
 
-    // ===== Клавиатура — более компактная =====
-    final double availableWidth = size.width - 8; // почти без отступов
+    // Клавиши делаем крупнее и удобнее
+    final double availableWidth = size.width - 10;
     final double keyWidth = isMobile
-        ? (availableWidth / 11.8)   // было 12.5 — теперь плотнее
-        : 42.0;
+        ? availableWidth / 10.6          // крупнее, чем раньше
+        : 43.0;
 
-    final double keyHeight = isMobile ? 44.0 : 52.0;
-    final double specialKeyWidth = isMobile ? keyWidth * 1.55 : 70.0;
+    final double keyHeight = isMobile ? 52.0 : 54.0;   // выше = удобнее попадать
+    final double specialKeyWidth = isMobile ? keyWidth * 1.65 : 72.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -240,14 +240,14 @@ class _WordleGameState extends State<WordleGame> {
           'WORDLE RU',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            letterSpacing: isMobile ? 2 : 4,
+            letterSpacing: isMobile ? 1.5 : 4,
             fontSize: isMobile ? 20 : 28,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: isMobile ? 46 : 56,
+        toolbarHeight: isMobile ? 44 : 56,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -263,16 +263,19 @@ class _WordleGameState extends State<WordleGame> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
 
-              // Игровое поле
+              // Игровое поле (компактное на мобильном)
               Expanded(
+                flex: isMobile ? 5 : 6,
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (row) {
                       return Padding(
-                        padding: EdgeInsets.symmetric(vertical: isMobile ? 2.0 : 4),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isMobile ? 1.8 : 4,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(5, (col) {
@@ -288,11 +291,11 @@ class _WordleGameState extends State<WordleGame> {
               // Сообщение
               if (message.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: Text(
                     message,
                     style: TextStyle(
-                      fontSize: isMobile ? 14 : 18,
+                      fontSize: isMobile ? 14 : 17,
                       fontWeight: FontWeight.bold,
                       color: message.contains('нет в словаре')
                           ? Colors.orange
@@ -305,11 +308,17 @@ class _WordleGameState extends State<WordleGame> {
               // Клавиатура
               Padding(
                 padding: EdgeInsets.only(
-                  left: 2,
-                  right: 2,
-                  bottom: isMobile ? 6 : 14,
+                  left: isMobile ? 3 : 8,
+                  right: isMobile ? 3 : 8,
+                  bottom: isMobile ? 8 : 16,
+                  top: 4,
                 ),
-                child: _buildKeyboard(keyWidth, keyHeight, specialKeyWidth, isMobile),
+                child: _buildKeyboard(
+                  keyWidth,
+                  keyHeight,
+                  specialKeyWidth,
+                  isMobile,
+                ),
               ),
             ],
           ),
@@ -337,13 +346,13 @@ class _WordleGameState extends State<WordleGame> {
                   : color,
           width: 2,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(5),
       ),
       child: Center(
         child: Text(
           letter.toUpperCase(),
           style: TextStyle(
-            fontSize: size * 0.47,
+            fontSize: size * 0.48,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -352,66 +361,100 @@ class _WordleGameState extends State<WordleGame> {
     );
   }
 
-  Widget _buildKeyboard(double keyWidth, double keyHeight, double specialKeyWidth, bool isMobile) {
+  Widget _buildKeyboard(
+    double keyWidth,
+    double keyHeight,
+    double specialKeyWidth,
+    bool isMobile,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // 1 ряд
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: keyboardRows[0]
-              .split('')
-              .map((l) => _key(l, keyWidth, keyHeight, isMobile))
-              .toList(),
+        _buildKeyRow(
+          keyboardRows[0].split(''),
+          keyWidth,
+          keyHeight,
+          isMobile,
         ),
-        SizedBox(height: isMobile ? 4 : 6),
+        SizedBox(height: isMobile ? 6 : 7),
 
         // 2 ряд
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: keyboardRows[1]
-              .split('')
-              .map((l) => _key(l, keyWidth, keyHeight, isMobile))
-              .toList(),
+        _buildKeyRow(
+          keyboardRows[1].split(''),
+          keyWidth,
+          keyHeight,
+          isMobile,
         ),
-        SizedBox(height: isMobile ? 4 : 6),
+        SizedBox(height: isMobile ? 6 : 7),
 
         // 3 ряд
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _key('Ввод', specialKeyWidth, keyHeight, isMobile),
-            ...keyboardRows[2]
-                .split('')
-                .map((l) => _key(l, keyWidth, keyHeight, isMobile)),
-            _key('⌫', specialKeyWidth, keyHeight, isMobile),
+            _key('Ввод', specialKeyWidth, keyHeight, isMobile, isSpecial: true),
+            ...keyboardRows[2].split('').map(
+                  (l) => _key(l, keyWidth, keyHeight, isMobile),
+                ),
+            _key('⌫', specialKeyWidth, keyHeight, isMobile, isSpecial: true),
           ],
         ),
       ],
     );
   }
 
-  Widget _key(String letter, double width, double height, bool isMobile) {
+  Widget _buildKeyRow(
+    List<String> letters,
+    double keyWidth,
+    double keyHeight,
+    bool isMobile,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: letters
+          .map((l) => _key(l, keyWidth, keyHeight, isMobile))
+          .toList(),
+    );
+  }
+
+  Widget _key(
+    String letter,
+    double width,
+    double height,
+    bool isMobile, {
+    bool isSpecial = false,
+  }) {
     final color = keyColors[letter] ?? const Color(0xFF818384);
 
     return GestureDetector(
       onTap: () => _onKeyTap(letter),
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: isMobile ? 1.3 : 2.5),
+        margin: EdgeInsets.symmetric(
+          horizontal: isMobile ? 2.0 : 3.0,
+        ),
         width: width,
         height: height,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(isMobile ? 8 : 5), // более круглые на мобильном
+          boxShadow: isMobile
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
         child: Center(
           child: Text(
             letter.toUpperCase(),
             style: TextStyle(
-              fontSize: letter.length > 1
-                  ? (isMobile ? 10.5 : 13)
-                  : (isMobile ? 13.5 : 16),
-              fontWeight: FontWeight.bold,
+              fontSize: isSpecial
+                  ? (isMobile ? 12.5 : 13.5)
+                  : (isMobile ? 16.5 : 16),
+              fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
           ),
