@@ -218,18 +218,21 @@ class _WordleGameState extends State<WordleGame> {
 
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
+    final padding = MediaQuery.of(context).padding;
 
-    // Адаптивные размеры
+    // Адаптивные размеры плиток
     final double tileSize = isMobile
-        ? (size.width * 0.14).clamp(48.0, 62.0)
+        ? ((size.width - 28) / 5.6).clamp(46.0, 58.0)
         : 62.0;
 
-    final double keyHeight = isMobile ? 46.0 : 52.0;
+    // ===== Клавиатура — более компактная =====
+    final double availableWidth = size.width - 8; // почти без отступов
     final double keyWidth = isMobile
-        ? (size.width - 24) / 12.5
+        ? (availableWidth / 11.8)   // было 12.5 — теперь плотнее
         : 42.0;
 
-    final double specialKeyWidth = isMobile ? keyWidth * 1.7 : 70.0;
+    final double keyHeight = isMobile ? 44.0 : 52.0;
+    final double specialKeyWidth = isMobile ? keyWidth * 1.55 : 70.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -238,13 +241,13 @@ class _WordleGameState extends State<WordleGame> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             letterSpacing: isMobile ? 2 : 4,
-            fontSize: isMobile ? 22 : 28,
+            fontSize: isMobile ? 20 : 28,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: isMobile ? 50 : 56,
+        toolbarHeight: isMobile ? 46 : 56,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -260,7 +263,7 @@ class _WordleGameState extends State<WordleGame> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
 
               // Игровое поле
               Expanded(
@@ -269,7 +272,7 @@ class _WordleGameState extends State<WordleGame> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (row) {
                       return Padding(
-                        padding: EdgeInsets.symmetric(vertical: isMobile ? 2.5 : 4),
+                        padding: EdgeInsets.symmetric(vertical: isMobile ? 2.0 : 4),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(5, (col) {
@@ -285,11 +288,11 @@ class _WordleGameState extends State<WordleGame> {
               // Сообщение
               if (message.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   child: Text(
                     message,
                     style: TextStyle(
-                      fontSize: isMobile ? 15 : 18,
+                      fontSize: isMobile ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: message.contains('нет в словаре')
                           ? Colors.orange
@@ -302,9 +305,9 @@ class _WordleGameState extends State<WordleGame> {
               // Клавиатура
               Padding(
                 padding: EdgeInsets.only(
-                  left: 4,
-                  right: 4,
-                  bottom: isMobile ? 8 : 16,
+                  left: 2,
+                  right: 2,
+                  bottom: isMobile ? 6 : 14,
                 ),
                 child: _buildKeyboard(keyWidth, keyHeight, specialKeyWidth, isMobile),
               ),
@@ -321,7 +324,7 @@ class _WordleGameState extends State<WordleGame> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
-      margin: const EdgeInsets.all(2.5),
+      margin: const EdgeInsets.all(2),
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -340,7 +343,7 @@ class _WordleGameState extends State<WordleGame> {
         child: Text(
           letter.toUpperCase(),
           style: TextStyle(
-            fontSize: size * 0.48,
+            fontSize: size * 0.47,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -353,6 +356,7 @@ class _WordleGameState extends State<WordleGame> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // 1 ряд
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: keyboardRows[0]
@@ -360,7 +364,9 @@ class _WordleGameState extends State<WordleGame> {
               .map((l) => _key(l, keyWidth, keyHeight, isMobile))
               .toList(),
         ),
-        SizedBox(height: isMobile ? 5 : 6),
+        SizedBox(height: isMobile ? 4 : 6),
+
+        // 2 ряд
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: keyboardRows[1]
@@ -368,7 +374,9 @@ class _WordleGameState extends State<WordleGame> {
               .map((l) => _key(l, keyWidth, keyHeight, isMobile))
               .toList(),
         ),
-        SizedBox(height: isMobile ? 5 : 6),
+        SizedBox(height: isMobile ? 4 : 6),
+
+        // 3 ряд
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -389,7 +397,7 @@ class _WordleGameState extends State<WordleGame> {
     return GestureDetector(
       onTap: () => _onKeyTap(letter),
       child: Container(
-        margin: EdgeInsets.all(isMobile ? 2.2 : 3),
+        margin: EdgeInsets.symmetric(horizontal: isMobile ? 1.3 : 2.5),
         width: width,
         height: height,
         decoration: BoxDecoration(
@@ -401,8 +409,8 @@ class _WordleGameState extends State<WordleGame> {
             letter.toUpperCase(),
             style: TextStyle(
               fontSize: letter.length > 1
-                  ? (isMobile ? 11 : 13)
-                  : (isMobile ? 14 : 16),
+                  ? (isMobile ? 10.5 : 13)
+                  : (isMobile ? 13.5 : 16),
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
