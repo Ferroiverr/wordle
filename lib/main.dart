@@ -219,20 +219,10 @@ class _WordleGameState extends State<WordleGame> {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
 
-    // ===== МОБИЛЬНЫЕ РАЗМЕРЫ =====
-    // Квадратики делаем заметно меньше
+    // Плитки делаем компактными на телефоне
     final double tileSize = isMobile
-        ? (size.width * 0.118).clamp(42.0, 52.0)
+        ? (size.width * 0.112).clamp(40.0, 50.0)
         : 62.0;
-
-    // Клавиши делаем крупнее и удобнее
-    final double availableWidth = size.width - 10;
-    final double keyWidth = isMobile
-        ? availableWidth / 10.6          // крупнее, чем раньше
-        : 43.0;
-
-    final double keyHeight = isMobile ? 52.0 : 54.0;   // выше = удобнее попадать
-    final double specialKeyWidth = isMobile ? keyWidth * 1.65 : 72.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -263,18 +253,17 @@ class _WordleGameState extends State<WordleGame> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
 
-              // Игровое поле (компактное на мобильном)
+              // Игровое поле
               Expanded(
-                flex: isMobile ? 5 : 6,
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (row) {
                       return Padding(
                         padding: EdgeInsets.symmetric(
-                          vertical: isMobile ? 1.8 : 4,
+                          vertical: isMobile ? 2.0 : 4,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -291,7 +280,7 @@ class _WordleGameState extends State<WordleGame> {
               // Сообщение
               if (message.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Text(
                     message,
                     style: TextStyle(
@@ -305,20 +294,15 @@ class _WordleGameState extends State<WordleGame> {
                   ),
                 ),
 
-              // Клавиатура
+              // Клавиатура — теперь всегда влезает
               Padding(
                 padding: EdgeInsets.only(
-                  left: isMobile ? 3 : 8,
-                  right: isMobile ? 3 : 8,
-                  bottom: isMobile ? 8 : 16,
+                  left: isMobile ? 4 : 12,
+                  right: isMobile ? 4 : 12,
+                  bottom: isMobile ? 10 : 18,
                   top: 4,
                 ),
-                child: _buildKeyboard(
-                  keyWidth,
-                  keyHeight,
-                  specialKeyWidth,
-                  isMobile,
-                ),
+                child: _buildKeyboard(isMobile),
               ),
             ],
           ),
@@ -361,101 +345,78 @@ class _WordleGameState extends State<WordleGame> {
     );
   }
 
-  Widget _buildKeyboard(
-    double keyWidth,
-    double keyHeight,
-    double specialKeyWidth,
-    bool isMobile,
-  ) {
+  Widget _buildKeyboard(bool isMobile) {
+    final double keyHeight = isMobile ? 48.0 : 52.0;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // 1 ряд
-        _buildKeyRow(
-          keyboardRows[0].split(''),
-          keyWidth,
-          keyHeight,
-          isMobile,
-        ),
+        _buildFlexibleRow(keyboardRows[0].split(''), keyHeight, isMobile),
         SizedBox(height: isMobile ? 6 : 7),
 
         // 2 ряд
-        _buildKeyRow(
-          keyboardRows[1].split(''),
-          keyWidth,
-          keyHeight,
-          isMobile,
-        ),
+        _buildFlexibleRow(keyboardRows[1].split(''), keyHeight, isMobile),
         SizedBox(height: isMobile ? 6 : 7),
 
-        // 3 ряд
+        // 3 ряд (с Ввод и ⌫)
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _key('Ввод', specialKeyWidth, keyHeight, isMobile, isSpecial: true),
+            Expanded(
+              flex: 16,
+              child: _key('Ввод', keyHeight, isMobile, isSpecial: true),
+            ),
             ...keyboardRows[2].split('').map(
-                  (l) => _key(l, keyWidth, keyHeight, isMobile),
+                  (l) => Expanded(
+                    flex: 10,
+                    child: _key(l, keyHeight, isMobile),
+                  ),
                 ),
-            _key('⌫', specialKeyWidth, keyHeight, isMobile, isSpecial: true),
+            Expanded(
+              flex: 16,
+              child: _key('⌫', keyHeight, isMobile, isSpecial: true),
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildKeyRow(
-    List<String> letters,
-    double keyWidth,
-    double keyHeight,
-    bool isMobile,
-  ) {
+  Widget _buildFlexibleRow(List<String> letters, double keyHeight, bool isMobile) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: letters
-          .map((l) => _key(l, keyWidth, keyHeight, isMobile))
+          .map(
+            (l) => Expanded(
+              child: _key(l, keyHeight, isMobile),
+            ),
+          )
           .toList(),
     );
   }
 
-  Widget _key(
-    String letter,
-    double width,
-    double height,
-    bool isMobile, {
-    bool isSpecial = false,
-  }) {
+  Widget _key(String letter, double height, bool isMobile, {bool isSpecial = false}) {
     final color = keyColors[letter] ?? const Color(0xFF818384);
 
-    return GestureDetector(
-      onTap: () => _onKeyTap(letter),
-      child: Container(
-        margin: EdgeInsets.symmetric(
-          horizontal: isMobile ? 2.0 : 3.0,
-        ),
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(isMobile ? 8 : 5), // более круглые на мобильном
-          boxShadow: isMobile
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            letter.toUpperCase(),
-            style: TextStyle(
-              fontSize: isSpecial
-                  ? (isMobile ? 12.5 : 13.5)
-                  : (isMobile ? 16.5 : 16),
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 2.0 : 3.0),
+      child: GestureDetector(
+        onTap: () => _onKeyTap(letter),
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(isMobile ? 8 : 5),
+          ),
+          child: Center(
+            child: Text(
+              letter.toUpperCase(),
+              style: TextStyle(
+                fontSize: isSpecial
+                    ? (isMobile ? 13 : 14)
+                    : (isMobile ? 15.5 : 16),
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
